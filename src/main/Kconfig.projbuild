@@ -1,0 +1,40 @@
+menu "LED Panel Configuration"
+
+    config USER_SSID
+        string "WiFi SSID"
+        default "myssid"
+        help
+            SSID (network name) for the example to connect to.
+
+    config USER_PASS
+        string "WiFi Password"
+        default "mypassword"
+        help
+            WiFi password (WPA or WPA2) for the example to use.
+
+    config MAXPIXELS
+        int "Total number of pixels in the LED pannel"
+        default 64
+        help
+            Maximum number of WS2811 pixels
+            Developer note: Since this has to be stored in the
+            12-bit slc.size / slc.length field with max.
+            value 2^12 = 4096 and WS_BREAK_BYTES is added, no
+            more than 339 LEDs can be addressed in this mode
+            (use two slcRXDescriptors in row to fix this)
+
+    choice LED_PROTOCOL
+        prompt "LED Protocol"
+        default Mxp
+        help
+            The communication protocol used for the LED panel.
+
+        config Mxp
+            bool "Mxp"
+
+        config Artnet
+            bool "Artnet"
+
+    endchoice
+
+endmenu

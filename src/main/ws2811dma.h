@@ -2,18 +2,14 @@
 #ifndef _WS2811_DMA
 #define _WS2811_DMA
 
-// Functions:
-void ws2811dma_init();
-void ws2811dma_put(uint8_t buffer[], uint16_t pixels, uint16_t offset);
+typedef enum {
+    COLOR_RGB = 0,
+    COLOR_GRB = 1,
+} colorOrder_t;
 
-/**
- * Configuration:
- * MAXPIXELS: Maximum number of WS2811 pixels that can be stored.
- * Since this has to be stored in the 12-bit slc.size / slc.length field with
- * max. value 2^12 = 4096 and WS_BREAK_BYTES is added, no more than 339 LEDs
- * can be addressed in this mode (use two slcRXDescriptors in row to fix this)
- */
-#define MAXPIXELS 100
+// Functions:
+void ws2811dma_init(colorOrder_t color);
+void ws2811dma_put(uint8_t buffer[], uint16_t pixels, uint16_t offset);
 
 /*
  * I²S data output clock (bit clock) calculation:
@@ -43,14 +39,14 @@ void ws2811dma_put(uint8_t buffer[], uint16_t pixels, uint16_t offset);
  * slcRXDescriptor is bitfield of configuration data for DMA
  */
 struct slcRXDescriptor {
-	uint32_t size			: 12;
-	uint32_t length			: 12;
-	uint32_t				:  5;
-	uint32_t sub_sof		:  1;
-	uint32_t eof			:  1;
-	uint32_t owner			:  1;
-	uint32_t buf_ptr		: 32;
-	uint32_t next_link_ptr	: 32;
+    uint32_t size           : 12;
+    uint32_t length         : 12;
+    uint32_t                :  5;
+    uint32_t sub_sof        :  1;
+    uint32_t eof            :  1;
+    uint32_t owner          :  1;
+    uint32_t buf_ptr        : 32;
+    uint32_t next_link_ptr  : 32;
 };
 
 #endif
