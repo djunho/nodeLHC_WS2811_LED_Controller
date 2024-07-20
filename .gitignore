@@ -4,3 +4,6 @@ build
 .cache/
 compile_commands.json
 sdkconfig*
+test/objs
+test/lib
+test/LEDPanel_tests
