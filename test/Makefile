@@ -23,12 +23,17 @@ CPP_PLATFORM = Gcc
 
 SRC_DIRS =
 
+SRC_FILES = \
+	$(PROJECT_ROOT)/src/main/artnet.c \
+
 TEST_SRC_DIRS = \
     $(PROJECT_ROOT)/test/
 
 INCLUDE_DIRS =\
     .\
-    $(CPPUTEST_HOME)/include\
+    $(CPPUTEST_HOME)/include \
+    $(PROJECT_ROOT)/test/inc \
+    $(PROJECT_ROOT)/test/inc/FreeRTOS \
 
 include $(CPPUTEST_HOME)/build/MakefileWorker.mk
 

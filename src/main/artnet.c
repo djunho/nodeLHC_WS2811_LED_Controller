@@ -7,11 +7,18 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>    // memset
 
 #include "esp_log.h"
 
 #include "esp_wifi.h"
+#include "tcpip_adapter.h"
+#include "lwip/inet.h"      // INADDR_ANY
 #include "lwip/sockets.h"
+#include "lwip/def.h"
+
+#include "FreeRTOS.h"
+#include "task.h"
 
 #include "mxp.h"
 
@@ -29,7 +36,7 @@ static const char *TAG = "Artnet";
 led_callback callback;
 
 
-static void ICACHE_FLASH_ATTR artnet_recv_opoutput(unsigned char *packet, unsigned short packetlen) {
+static void artnet_recv_opoutput(unsigned char *packet, ssize_t packetlen) {
     if (packetlen >= 8) {
         uint16_t ProtVer=((uint16_t)packet[0] << 8) | packet[1];
         if (ProtVer == 14) {
@@ -95,7 +102,7 @@ struct ArtNetPollReply {
 #define ARTNET_SET_SHORT_LOFIRST(target,value) (target)[0] = (value) & 0xFF; (target)[1] = (value) >> 8;
 #define ARTNET_SET_SHORT_HIFIRST(target,value) (target)[0] = (value) >> 8; (target)[1] = (value) & 0xFF;
 
-static void ICACHE_FLASH_ATTR artnet_recv_oppoll(unsigned char *packet, unsigned short packetlen, struct ArtNetPollReply *response) {
+static void artnet_recv_oppoll(unsigned char *packet, ssize_t packetlen, struct ArtNetPollReply *response) {
     if (packetlen >= 3) {
         //uint16_t ProtVer=((uint16_t)packet[0] << 8) | packet[1];
         uint8_t TalkToMe=packet[2];
@@ -145,7 +152,7 @@ static void ICACHE_FLASH_ATTR artnet_recv_oppoll(unsigned char *packet, unsigned
     }
 }
 
-static uint16_t ICACHE_FLASH_ATTR get_op_artnet(uint8_t *data, unsigned short length){
+static uint16_t get_op_artnet(uint8_t *data, ssize_t length){
     if (data && length>=10) {
         if (data[0] == 'A' && data[1] == 'r' && data[2] == 't' && data[3] == '-' &&
             data[4] == 'N' && data[5] == 'e' && data[6] == 't' && data[7] == '\0'   ) {
@@ -164,7 +171,7 @@ static uint16_t ICACHE_FLASH_ATTR get_op_artnet(uint8_t *data, unsigned short le
 
 static void udp_server_task(void *pvParameters)
 {
-    uint8_t buffer_size = (uint32_t)pvParameters;
+    size_t buffer_size = (size_t)pvParameters;
     uint8_t rx_buffer[buffer_size];
     char addr_str[128];
     int addr_family;
@@ -196,7 +203,7 @@ static void udp_server_task(void *pvParameters)
             ESP_LOGD(TAG, "Waiting for data");
             struct sockaddr_in sourceAddr;
             socklen_t socklen = sizeof(sourceAddr);
-            int len = recvfrom(sock, rx_buffer, sizeof(rx_buffer), 0, (struct sockaddr *)&sourceAddr, &socklen);
+            ssize_t len = recvfrom(sock, rx_buffer, sizeof(rx_buffer), 0, (struct sockaddr *)&sourceAddr, &socklen);
 
             // Error occured during receiving
             if (len < 0) {
@@ -223,13 +230,14 @@ static void udp_server_task(void *pvParameters)
                 switch (opcode) {
                     case ARTNET_OpOutput:
                         artnet_recv_opoutput(&rx_buffer[10], len-10);
+                        ESP_LOGE(TAG, "Received msg");
                         break;
                     case ARTNET_OpPoll:
                     {
                         struct ArtNetPollReply response;
                         artnet_recv_oppoll(&rx_buffer[10], len-10, &response);
-                        int err = sendto(sock, rx_buffer, len, 0, (struct sockaddr *)&sourceAddr, sizeof(sourceAddr));
-                        if (err < 0) {
+                        ssize_t send_len = sendto(sock, rx_buffer, (size_t)len, 0, (struct sockaddr *)&sourceAddr, sizeof(sourceAddr));
+                        if (send_len < 0) {
                             ESP_LOGE(TAG, "Error occured during sending: errno %d", errno);
                         }
                         break;
@@ -250,7 +258,7 @@ static void udp_server_task(void *pvParameters)
 }
 
 void artnet_init(led_callback led_cb, uint32_t num_leds) {
-    uint32_t buffer_size = 18 + num_leds*3;
+    size_t buffer_size = 18 + num_leds*3;
     callback = led_cb;
     ESP_LOGI(TAG, "Initializing Artenet");
     xTaskCreate(udp_server_task, "Artnet UDP port", 4*1024, (void*)buffer_size, 2, NULL);
