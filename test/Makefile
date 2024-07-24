@@ -21,6 +21,8 @@ CPPUTEST_EXE_FLAGS = -v -c
 CPPUTEST_USE_EXTENSIONS = Y
 CPP_PLATFORM = Gcc
 
+CPPUTEST_CPPFLAGS = -DUT
+
 SRC_DIRS =
 
 SRC_FILES = \
@@ -34,6 +36,7 @@ INCLUDE_DIRS =\
     $(CPPUTEST_HOME)/include \
     $(PROJECT_ROOT)/test/inc \
     $(PROJECT_ROOT)/test/inc/FreeRTOS \
+    $(PROJECT_ROOT)/src/main/ \
 
 include $(CPPUTEST_HOME)/build/MakefileWorker.mk
 

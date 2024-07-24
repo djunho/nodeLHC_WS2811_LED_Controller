@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>    // memset
 
 #include "esp_log.h"
@@ -22,21 +23,26 @@
 
 #include "mxp.h"
 
+#ifdef UT
+    #define _STATIC
+#else
+    #define _STATIC static
+#endif
+
 
 #define ARTNET_Port 0x1936
 
-uint8_t artnet_enabled = 1;
-char artnet_shortname[18] = "LHC";
-char artnet_longname[64] = "LHC Painel de LED";
-uint8_t artnet_net = 0;
-uint8_t artnet_subnet = 0;
-uint8_t artnet_universe = 0;
+_STATIC const char artnet_shortname[18] = "LHC";
+_STATIC const char artnet_longname[64] = "LHC Painel de LED";
+_STATIC const uint8_t artnet_net = 0;
+_STATIC const uint8_t artnet_subnet = 0;
+_STATIC const uint8_t artnet_universe = 0;
 
-static const char *TAG = "Artnet";
-led_callback callback;
+_STATIC const char *TAG = "Artnet";
+_STATIC led_callback callback;
 
 
-static void artnet_recv_opoutput(unsigned char *packet, ssize_t packetlen) {
+_STATIC bool artnet_recv_opoutput(unsigned char *packet, ssize_t packetlen) {
     if (packetlen >= 8) {
         uint16_t ProtVer=((uint16_t)packet[0] << 8) | packet[1];
         if (ProtVer == 14) {
@@ -49,14 +55,15 @@ static void artnet_recv_opoutput(unsigned char *packet, ssize_t packetlen) {
                 uint16_t Length = ((uint16_t)packet[6] << 8) | packet[7];
                 if ((packetlen - 8)/3 >= Length){
                     callback(&packet[8], Length, 0);
+                    return true;
                 }
             } else {
-                //Not intended for us...
+                return false;
             }
         }
-    } else {
-        //Invalid length
     }
+
+    return false;
 }
 
 #define ARTNET_invalid      0xFFFF
@@ -102,7 +109,7 @@ struct ArtNetPollReply {
 #define ARTNET_SET_SHORT_LOFIRST(target,value) (target)[0] = (value) & 0xFF; (target)[1] = (value) >> 8;
 #define ARTNET_SET_SHORT_HIFIRST(target,value) (target)[0] = (value) >> 8; (target)[1] = (value) & 0xFF;
 
-static void artnet_recv_oppoll(unsigned char *packet, ssize_t packetlen, struct ArtNetPollReply *response) {
+_STATIC void artnet_recv_oppoll(unsigned char *packet, ssize_t packetlen, struct ArtNetPollReply *response) {
     if (packetlen >= 3) {
         //uint16_t ProtVer=((uint16_t)packet[0] << 8) | packet[1];
         uint8_t TalkToMe=packet[2];
@@ -152,7 +159,7 @@ static void artnet_recv_oppoll(unsigned char *packet, ssize_t packetlen, struct 
     }
 }
 
-static uint16_t get_op_artnet(uint8_t *data, ssize_t length){
+_STATIC uint16_t get_op_artnet(uint8_t *data, ssize_t length){
     if (data && length>=10) {
         if (data[0] == 'A' && data[1] == 'r' && data[2] == 't' && data[3] == '-' &&
             data[4] == 'N' && data[5] == 'e' && data[6] == 't' && data[7] == '\0'   ) {
@@ -169,7 +176,7 @@ static uint16_t get_op_artnet(uint8_t *data, ssize_t length){
     return ARTNET_invalid;
 }
 
-static void udp_server_task(void *pvParameters)
+_STATIC void udp_server_task(void *pvParameters)
 {
     size_t buffer_size = (size_t)pvParameters;
     uint8_t rx_buffer[buffer_size];
