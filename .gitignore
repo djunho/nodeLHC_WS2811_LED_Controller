@@ -6,4 +6,6 @@ compile_commands.json
 sdkconfig*
 test/objs
 test/lib
-test/LEDPanel_tests
+test/LEDPanel_tests*
+test/gcov
+.gdb*
