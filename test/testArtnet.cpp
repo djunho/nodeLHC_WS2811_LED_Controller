@@ -26,7 +26,9 @@ TEST_GROUP(artnet)
 {
     void setup()
     {
+        mock().disable();
         artnet_init(callbackToHandleLED, 8);
+        mock().enable();
     }
     void teardown()
     {
@@ -122,3 +124,24 @@ TEST(artnet, checking_packet_correct_1_led)
     CHECK_EQUAL(true, ret);
 }
 
+TEST_GROUP(artnet_init)
+{
+    void setup()
+    {
+    }
+    void teardown()
+    {
+        mock().checkExpectations();
+        mock().clear();
+    }
+};
+
+TEST(artnet_init, checking_init)
+{
+    mock().expectOneCall("xTaskCreate")
+        .withParameter("pcName", "Artnet UDP port")
+        .ignoreOtherParameters()
+        .andReturnValue(0);
+    artnet_init(callbackToHandleLED, 8);
+
+}

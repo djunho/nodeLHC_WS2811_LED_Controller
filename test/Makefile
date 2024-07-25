@@ -29,6 +29,9 @@ SRC_DIRS =
 SRC_FILES = \
 	$(PROJECT_ROOT)/src/main/artnet.c \
 
+MOCKS_SRC_FILES = \
+    $(PROJECT_ROOT)/test/mocks/FreeRTOS.cpp \
+
 TEST_SRC_DIRS = \
     $(PROJECT_ROOT)/test/
 
