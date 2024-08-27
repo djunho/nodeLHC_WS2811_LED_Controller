@@ -148,8 +148,6 @@ void wifi_init_sta(void)
 
     tcpip_adapter_init();
 
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
@@ -225,6 +223,9 @@ void user_init(void)
 void app_main()
 {
     ESP_ERROR_CHECK(nvs_flash_init());
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+
     ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
 
     user_init();

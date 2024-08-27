@@ -36,6 +36,14 @@ void ws2811dma_init(colorOrder_t color) {
     // I²S module seems to take some time to power up
     //vTaskDelay(100);
 
+    // Reset DMA
+    SET_PERI_REG_MASK(SLC_CONF0, SLC_RXLINK_RST);
+    CLEAR_PERI_REG_MASK(SLC_CONF0, SLC_RXLINK_RST);
+
+    // Clear DMA int flags
+    SET_PERI_REG_MASK(SLC_INT_CLR, 0xffffffff);
+    CLEAR_PERI_REG_MASK(SLC_INT_CLR, 0xffffffff);
+
     /*** Prefill tape with zeros ***/
     memset(tape, WS_BIT0 | (WS_BIT0<<4), sizeof(tape) - WS_BREAK_BYTES);
     memset((void *)(((uint32_t)tape) + WS_BREAK_BYTES), 0, WS_BREAK_BYTES);
@@ -57,9 +65,13 @@ void ws2811dma_init(colorOrder_t color) {
     slc.size = slc.length = sizeof(tape);
     slc.next_link_ptr = (uint32_t)&slc;
 
-    *((uint32_t *)SLC_CONF0) = (1<<SLC_MODE_S);
-    *((uint32_t *)SLC_RX_DSCR_CONF) = SLC_INFOR_NO_REPLACE | SLC_TOKEN_NO_REPLACE;
-    *((uint32_t *)SLC_RX_LINK) = SLC_RXLINK_START | (((uint32_t) &slc) & SLC_RXLINK_DESCADDR_MASK);
+    CLEAR_PERI_REG_MASK(SLC_CONF0, (SLC_MODE << SLC_MODE_S));
+    SET_PERI_REG_MASK(SLC_CONF0, (1 << SLC_MODE_S));
+    SET_PERI_REG_MASK(SLC_RX_DSCR_CONF, SLC_INFOR_NO_REPLACE | SLC_TOKEN_NO_REPLACE);
+    CLEAR_PERI_REG_MASK(SLC_RX_DSCR_CONF, SLC_RX_FILL_EN | SLC_RX_EOF_MODE | SLC_RX_FILL_MODE);
+
+    SET_PERI_REG_MASK(SLC_RX_LINK, (((uint32_t) &slc) & SLC_RXLINK_DESCADDR_MASK));
+    SET_PERI_REG_MASK(SLC_RX_LINK, SLC_RXLINK_START);
 
     /*
      * Setup I²S output:
@@ -69,6 +81,11 @@ void ws2811dma_init(colorOrder_t color) {
      */
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, 1);
     rom_i2c_writeReg_Mask(0x67, 4, 4, 7, 7, 1);
+    // Reset I2S subsystem
+    CLEAR_PERI_REG_MASK(I2SCONF, I2S_I2S_RESET_MASK);
+    SET_PERI_REG_MASK(I2SCONF, I2S_I2S_RESET_MASK);
+    CLEAR_PERI_REG_MASK(I2SCONF, I2S_I2S_RESET_MASK);
+
     *((uint32_t *)I2SCONF) = I2S_RIGHT_FIRST | I2S_MSB_RIGHT | I2S_I2S_TX_START
                             | (((I2S_CLKM_DIV - 1) & I2S_CLKM_DIV_NUM) << I2S_CLKM_DIV_NUM_S)
                             | (((I2S_BCK_DIV - 1) & I2S_BCK_DIV_NUM) << I2S_BCK_DIV_NUM_S);
