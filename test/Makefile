@@ -44,3 +44,12 @@ INCLUDE_DIRS =\
 
 include $(CPPUTEST_HOME)/build/MakefileWorker.mk
 
+../libs/CppUTest/lib/libCppUTest.a:
+	@echo ""
+	@echo "=================== Compiling the CppUTest ==================="
+	@echo ""
+	cd ../libs/CppUTest && autoreconf -i . && ./configure && make -j$(nproc) tdd
+	@echo ""
+	@echo "============== Finished the CppUTest compilation =============="
+	@echo ""
+
